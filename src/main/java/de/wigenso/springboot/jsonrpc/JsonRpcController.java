@@ -37,7 +37,7 @@ public interface JsonRpcController {
             if (method.isAnnotationPresent(JsonRpc.class) && method.getName().equals(request.getMethod())) {
 
                 Object methodReturnValue = null;
-                Throwable methodReturnException = null;
+                InvocationTargetException methodReturnException = null;
 
                 final int numberOfParams = request.getParams() == null ? 0 : request.getParams().size();
                 if (method.getParameterCount() > 0 && request.getParams() == null
@@ -49,7 +49,7 @@ public interface JsonRpcController {
 
                     try {
                         methodReturnValue = method.invoke(this);
-                    } catch (Exception e) {
+                    } catch (InvocationTargetException e) {
                         methodReturnException = e;
                     }
 
@@ -65,7 +65,7 @@ public interface JsonRpcController {
 
                     try {
                         methodReturnValue = method.invoke(this, params);
-                    } catch (Exception e) {
+                    } catch (InvocationTargetException e) {
                         methodReturnException = e;
                     }
 
@@ -85,7 +85,7 @@ public interface JsonRpcController {
 
                     try {
                         methodReturnValue = method.invoke(this, params);
-                    } catch (Exception e) {
+                    } catch (InvocationTargetException e) {
                         methodReturnException = e;
                     }
                 }
@@ -97,7 +97,7 @@ public interface JsonRpcController {
                     result.setResult(objectMapper.convertValue(methodReturnValue, JsonNode.class));
                 }
                 if (methodReturnException != null) {
-                    result.setError(objectMapper.convertValue(methodReturnException.getCause(), JsonNode.class));
+                    result.setError(objectMapper.convertValue(methodReturnException.getTargetException(), JsonNode.class));
                 }
                 return result;
             }
