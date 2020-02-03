@@ -16,6 +16,32 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Library to use JSON RPC 2.0 within spring-boot-2 applications.</description>
+    <url>https://github.com/lenzelot79/spring-boot-jsonrpc</url>
+         
+    <licenses>
+         <license>
+              <name>The Apache License, Version 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+         </license>
+    </licenses>         
+         
+  <developers>
+    <developer>
+      <name>Ludwig Lenz</name>
+      <email>info@ludwig-lenz.de</email>
+      <organization>Wigenso</organization>
+      <organizationUrl>http://www.wigenso.de</organizationUrl>
+    </developer>
+  </developers>
+         
+<scm>
+  <connection>scm:git:git://github.com/lenzelot79/spring-boot-jsonrpc.git</connection>
+  <developerConnection>scm:git:ssh://github.com:lenzelot79/spring-boot-jsonrpc.git</developerConnection>
+  <url>https://github.com/lenzelot79/spring-boot-jsonrpc.git</url>
+</scm>
+         
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
