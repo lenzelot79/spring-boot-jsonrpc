@@ -3,6 +3,7 @@ package de.wigenso.springboot.jsonrpc;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.*;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.client.RestTemplate;
 
 import java.lang.reflect.InvocationHandler;
@@ -38,8 +39,8 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
         for (int i = 0; i < method.getParameters().length; i++) {
             Parameter parameter = method.getParameters()[i];
 
-            if (parameter.isAnnotationPresent(JsonRpcHeader.class)) {
-                final String key = parameter.getAnnotation(JsonRpcHeader.class).value();
+            if (parameter.isAnnotationPresent(RequestHeader.class)) {
+                final String key = parameter.getAnnotation(RequestHeader.class).value();
                 if (!headers.containsKey(key)) {
                     headers.put(key, new ArrayList<>());
                 }
