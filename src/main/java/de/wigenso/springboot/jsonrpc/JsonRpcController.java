@@ -2,7 +2,6 @@ package de.wigenso.springboot.jsonrpc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.NullNode;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,10 +16,9 @@ public interface JsonRpcController {
 
     List<String> SUPPORTED_VERSIONS = List.of("2.0");
 
-
     @PostMapping
     @ResponseBody
-    default JsonRpcResponse jsonRpcCall(@RequestBody JsonRpcRequest request) throws InvocationTargetException, IllegalAccessException {
+    default JsonRpcResponse jsonRpcCall(@RequestBody JsonRpcRequest request) throws IllegalAccessException {
 
         if (!SUPPORTED_VERSIONS.contains(request.getJsonrpc())) {
             throw new UnsupportedJsonRpcVersionException(request.getJsonrpc());
