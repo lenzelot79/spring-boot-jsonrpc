@@ -3,6 +3,7 @@ package de.wigenso.springboot.jsonrpc;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.*;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.client.RestTemplate;
 
 import java.lang.reflect.InvocationHandler;
@@ -19,7 +20,7 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
     private final ObjectMapper objectMapper;
     private final String apiUrl;
 
-    public JsonRpcInvocationHandler(RestTemplate restTemplate, String baseUrl) {
+    JsonRpcInvocationHandler(RestTemplate restTemplate, String baseUrl) {
         this.restTemplate = restTemplate;
         this.apiUrl = baseUrl;
         this.objectMapper = new ObjectMapper();
@@ -38,8 +39,8 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
         for (int i = 0; i < method.getParameters().length; i++) {
             Parameter parameter = method.getParameters()[i];
 
-            if (parameter.isAnnotationPresent(JsonRpcHeader.class)) {
-                final String key = parameter.getAnnotation(JsonRpcHeader.class).value();
+            if (parameter.isAnnotationPresent(RequestHeader.class)) {
+                final String key = parameter.getAnnotation(RequestHeader.class).value();
                 if (!headers.containsKey(key)) {
                     headers.put(key, new ArrayList<>());
                 }
@@ -49,7 +50,7 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
             }
         }
 
-        rq.setParams(objectMapper.convertValue(objects, JsonNode.class));
+        rq.setParams(objectMapper.convertValue(params, JsonNode.class));
 
         final HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -61,9 +62,9 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
         final HttpEntity<JsonRpcRequest> entity = new HttpEntity<>(rq,  httpHeaders);
         final ResponseEntity<JsonRpcResponse> result = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, JsonRpcResponse.class);
 
-        if (result.getBody().getError() != null) {
+        if (result.getBody() != null && result.getBody().getError() != null) {
             throw objectMapper.convertValue(result.getBody().getError(), Exception.class); // TODO: specific ?? -> einen Interceptor einfügen / User-Defined parser
-        } else if (result.getBody().getResult() != null) {
+        } else if (result.getBody() != null && result.getBody().getResult() != null) {
             return objectMapper.convertValue(result.getBody().getResult(), method.getReturnType());
         } else {
             return null;
