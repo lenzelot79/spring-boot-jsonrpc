@@ -35,11 +35,13 @@ public class JsonRpcController {
         }
 
         final ObjectMapper objectMapper = new ObjectMapper();
-        final JsonRpcController self = ctx.getBean(this.getClass()); // TODO: kann eventuell wieder weg, falls Test korrekt funktioniert prüfen!
+        final JsonRpcController self = ctx.getBean(this.getClass());
 
-        for (final Method method : AopUtils.getTargetClass(this).getMethods()) {
+        for (final Method method : self.getClass().getMethods()) {
 
-            if (method.isAnnotationPresent(JsonRpc.class) && method.getName().equals(request.getMethod())) {
+            Method parentOfProxyMethod = AopUtils.getMostSpecificMethod(method, self.getClass()); // for annotations
+
+            if (parentOfProxyMethod.isAnnotationPresent(JsonRpc.class) && method.getName().equals(request.getMethod())) {
 
                 Object methodReturnValue = null;
                 InvocationTargetException methodReturnException = null;
@@ -102,7 +104,7 @@ public class JsonRpcController {
                     result.setResult(objectMapper.convertValue(methodReturnValue, JsonNode.class));
                 }
                 if (methodReturnException != null) {
-                    result.setError(objectMapper.convertValue(methodReturnException.getTargetException(), JsonNode.class));
+                    result.setError(objectMapper.convertValue(methodReturnException.getTargetException(), JsonNode.class)); // TODO: Exception handling !!
                 }
                 return result;
             }
