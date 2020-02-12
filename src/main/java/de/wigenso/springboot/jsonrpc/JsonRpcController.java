@@ -10,10 +10,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.security.Principal;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class JsonRpcController {
 
@@ -24,7 +28,7 @@ public class JsonRpcController {
 
     @PostMapping
     @ResponseBody
-    public JsonRpcResponse jsonRpcCall(@RequestBody JsonRpcRequest request) throws IllegalAccessException {
+    public JsonRpcResponse jsonRpcCall(@RequestBody JsonRpcRequest request, Principal principal, HttpServletRequest httpServletRequest) throws IllegalAccessException {
 
         if (!SUPPORTED_VERSIONS.contains(request.getJsonrpc())) {
             throw new UnsupportedJsonRpcVersionException(request.getJsonrpc());
@@ -47,8 +51,9 @@ public class JsonRpcController {
                 InvocationTargetException methodReturnException = null;
 
                 final int numberOfParams = request.getParams() == null ? 0 : request.getParams().size();
-                if (method.getParameterCount() > 0 && request.getParams() == null
-                        || method.getParameterCount() > numberOfParams) {
+                final int numberOfParamsToInject = getNumberOfParamsToInject(method);
+                if (method.getParameterCount() - numberOfParamsToInject > 0 && request.getParams() == null
+                        || method.getParameterCount() - numberOfParamsToInject > numberOfParams) {
                     throw new ToFewNamedParametersForMethodException(method.getName(), numberOfParams, method.getParameterCount());
                 }
 
@@ -64,9 +69,13 @@ public class JsonRpcController {
 
                     Object[] params = new Object[method.getParameterCount()];
 
+                    Iterator<JsonNode> requestParametersIterator = request.getParams().iterator();
                     for (int i  = 0; i < method.getParameterCount(); i++) {
-                        JsonNode paramNode = request.getParams().get(i);
-                        Object param = objectMapper.convertValue(paramNode, method.getParameters()[i].getType());
+                        Parameter parameter = parentOfProxyMethod.getParameters()[i];
+                        Object param = tryGetInjectionParameter(parameter, principal, httpServletRequest);
+                        if (param == null) {
+                            param = objectMapper.convertValue(requestParametersIterator.next(), parameter.getType());
+                        }
                         params[i] = param;
                     }
 
@@ -81,12 +90,15 @@ public class JsonRpcController {
                     Object[] params = new Object[method.getParameterCount()];
 
                     for (int i  = 0; i < method.getParameterCount(); i++) {
-                        Parameter parameter = method.getParameters()[i];
-                        JsonNode paramNode = request.getParams().findValue(parameter.getName());
-                        if (paramNode == null) {
-                            throw new MissingParameterNameException(parameter.getName(), method.getName());
+                        Parameter parameter = parentOfProxyMethod.getParameters()[i];
+                        Object param = tryGetInjectionParameter(parameter, principal, httpServletRequest);
+                        if (param == null) {
+                            JsonNode paramNode = request.getParams().findValue(parameter.getName());
+                            if (paramNode == null) {
+                                throw new MissingParameterNameException(parameter.getName(), method.getName());
+                            }
+                            param = objectMapper.convertValue(paramNode, parameter.getType());
                         }
-                        Object param = objectMapper.convertValue(paramNode, method.getParameters()[i].getType());
                         params[i] = param;
                     }
 
@@ -112,9 +124,23 @@ public class JsonRpcController {
         }
 
         throw new MethodNotFoundException(request.getMethod());
-
     }
 
+    private int getNumberOfParamsToInject(Method method) {
+        return (int) Stream.of(method.getParameters()).filter(p -> List.of(Principal.class, HttpServletRequest.class).contains(p.getType())).count();
+    }
+
+
+    private static Object tryGetInjectionParameter(final Parameter parameter, final Principal principal, final HttpServletRequest httpServletRequest) {
+
+        if (Principal.class.equals(parameter.getType())) {
+            return principal;
+        } else if (HttpServletRequest.class.equals(parameter.getType())) {
+            return httpServletRequest;
+        } else {
+            return null;
+        }
+    }
 
 
 }
