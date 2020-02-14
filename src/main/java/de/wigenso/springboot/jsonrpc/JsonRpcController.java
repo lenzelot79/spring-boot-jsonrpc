@@ -6,6 +6,7 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -15,8 +16,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class JsonRpcController {
@@ -28,7 +31,7 @@ public class JsonRpcController {
 
     @PostMapping
     @ResponseBody
-    public JsonRpcResponse jsonRpcCall(@RequestBody JsonRpcRequest request, Principal principal, HttpServletRequest httpServletRequest) throws IllegalAccessException {
+    public JsonRpcResponse jsonRpcCall(@RequestBody JsonRpcRequest request, Principal principal, HttpServletRequest httpServletRequest) throws Throwable {
 
         if (!SUPPORTED_VERSIONS.contains(request.getJsonrpc())) {
             throw new UnsupportedJsonRpcVersionException(request.getJsonrpc());
@@ -116,7 +119,12 @@ public class JsonRpcController {
                     result.setResult(objectMapper.convertValue(methodReturnValue, JsonNode.class));
                 }
                 if (methodReturnException != null) {
-                    result.setError(objectMapper.convertValue(methodReturnException.getTargetException(), JsonNode.class)); // TODO: Exception handling !!
+                    try {
+                        final Throwable targetException = methodReturnException.getTargetException();
+                        result.setError(tryToConvert(targetException).orElseThrow(() -> targetException));
+                    } catch (InvocationTargetException e) {
+                        throw e.getTargetException();
+                    }
                 }
                 return result;
             }
@@ -125,6 +133,22 @@ public class JsonRpcController {
 
         throw new MethodNotFoundException(request.getMethod());
     }
+
+    private Optional<JsonNode> tryToConvert(Throwable throwable) throws InvocationTargetException, IllegalAccessException {
+
+        for (JsonExceptionConverter converter : ctx.getBeansOfType(JsonExceptionConverter.class).values()) {
+            for (Method method : converter.getClass().getMethods()) {
+                Method parentOfProxyMethod = AopUtils.getMostSpecificMethod(method, converter.getClass());
+                ExceptionHandler exceptionHandler = parentOfProxyMethod.getAnnotation(ExceptionHandler.class);
+                if (exceptionHandler != null && Arrays.asList(exceptionHandler.value()).contains(throwable.getClass())) {
+                    return Optional.of((JsonNode) method.invoke(converter, throwable));
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
+
 
     private int getNumberOfParamsToInject(Method method) {
         return (int) Stream.of(method.getParameters()).filter(p -> List.of(Principal.class, HttpServletRequest.class).contains(p.getType())).count();
