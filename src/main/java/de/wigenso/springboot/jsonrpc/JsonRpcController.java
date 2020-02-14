@@ -29,6 +29,8 @@ public class JsonRpcController {
     @Autowired
     private ApplicationContext ctx;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @PostMapping
     @ResponseBody
     public JsonRpcResponse jsonRpcCall(@RequestBody JsonRpcRequest request, Principal principal, HttpServletRequest httpServletRequest) throws Throwable {
@@ -41,7 +43,6 @@ public class JsonRpcController {
             throw new MethodMissingException();
         }
 
-        final ObjectMapper objectMapper = new ObjectMapper();
         final JsonRpcController self = ctx.getBean(this.getClass());
 
         for (final Method method : self.getClass().getMethods()) {
@@ -60,56 +61,20 @@ public class JsonRpcController {
                     throw new ToFewNamedParametersForMethodException(method.getName(), numberOfParams, method.getParameterCount());
                 }
 
+                final Object[] params;
+
                 if (request.getParams() == null) {
-
-                    try {
-                        methodReturnValue = method.invoke(self);
-                    } catch (InvocationTargetException e) {
-                        methodReturnException = e;
-                    }
-
+                    params = new Object[0];
                 } else if (request.getParams().isArray()) {
+                    params = getParamsFromArray(request, principal, httpServletRequest, method, parentOfProxyMethod);
+                } else {
+                    params = getParams(request, principal, httpServletRequest, method, parentOfProxyMethod);
+                }
 
-                    Object[] params = new Object[method.getParameterCount()];
-
-                    Iterator<JsonNode> requestParametersIterator = request.getParams().iterator();
-                    for (int i  = 0; i < method.getParameterCount(); i++) {
-                        Parameter parameter = parentOfProxyMethod.getParameters()[i];
-                        Object param = tryGetInjectionParameter(parameter, principal, httpServletRequest);
-                        if (param == null) {
-                            param = objectMapper.convertValue(requestParametersIterator.next(), parameter.getType());
-                        }
-                        params[i] = param;
-                    }
-
-                    try {
-                        methodReturnValue = method.invoke(self, params);
-                    } catch (InvocationTargetException e) {
-                        methodReturnException = e;
-                    }
-
-                } else if (request.getParams() != null) {
-
-                    Object[] params = new Object[method.getParameterCount()];
-
-                    for (int i  = 0; i < method.getParameterCount(); i++) {
-                        Parameter parameter = parentOfProxyMethod.getParameters()[i];
-                        Object param = tryGetInjectionParameter(parameter, principal, httpServletRequest);
-                        if (param == null) {
-                            JsonNode paramNode = request.getParams().findValue(parameter.getName());
-                            if (paramNode == null) {
-                                throw new MissingParameterNameException(parameter.getName(), method.getName());
-                            }
-                            param = objectMapper.convertValue(paramNode, parameter.getType());
-                        }
-                        params[i] = param;
-                    }
-
-                    try {
-                        methodReturnValue = method.invoke(self, params);
-                    } catch (InvocationTargetException e) {
-                        methodReturnException = e;
-                    }
+                try {
+                    methodReturnValue = method.invoke(self, params);
+                } catch (InvocationTargetException e) {
+                    methodReturnException = e;
                 }
 
                 JsonRpcResponse result = new JsonRpcResponse();
@@ -132,6 +97,39 @@ public class JsonRpcController {
         }
 
         throw new MethodNotFoundException(request.getMethod());
+    }
+
+    private Object[] getParams(@RequestBody JsonRpcRequest request, Principal principal, HttpServletRequest httpServletRequest, Method method, Method parentOfProxyMethod) {
+        Object[] params = new Object[method.getParameterCount()];
+
+        for (int i  = 0; i < method.getParameterCount(); i++) {
+            Parameter parameter = parentOfProxyMethod.getParameters()[i];
+            Object param = tryGetInjectionParameter(parameter, principal, httpServletRequest);
+            if (param == null) {
+                JsonNode paramNode = request.getParams().findValue(parameter.getName());
+                if (paramNode == null) {
+                    throw new MissingParameterNameException(parameter.getName(), method.getName());
+                }
+                param = objectMapper.convertValue(paramNode, parameter.getType());
+            }
+            params[i] = param;
+        }
+        return params;
+    }
+
+    private Object[] getParamsFromArray(@RequestBody JsonRpcRequest request, Principal principal, HttpServletRequest httpServletRequest, Method method, Method parentOfProxyMethod) {
+        Object[] params = new Object[method.getParameterCount()];
+
+        Iterator<JsonNode> requestParametersIterator = request.getParams().iterator();
+        for (int i  = 0; i < method.getParameterCount(); i++) {
+            Parameter parameter = parentOfProxyMethod.getParameters()[i];
+            Object param = tryGetInjectionParameter(parameter, principal, httpServletRequest);
+            if (param == null) {
+                param = objectMapper.convertValue(requestParametersIterator.next(), parameter.getType());
+            }
+            params[i] = param;
+        }
+        return params;
     }
 
     private Optional<JsonNode> tryToConvert(Throwable throwable) throws InvocationTargetException, IllegalAccessException {
