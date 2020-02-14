@@ -11,6 +11,6 @@ import java.lang.annotation.*;
 @Documented
 @Controller
 @ResponseBody
-public @interface RpcController {
+public @interface RemoteProcedureController {
     String value() default "";
 }
