@@ -45,7 +45,7 @@ public class JsonRpcController {
 
             Method parentOfProxyMethod = AopUtils.getMostSpecificMethod(method, self.getClass()); // for annotations
 
-            if (parentOfProxyMethod.isAnnotationPresent(JsonRpc.class) && method.getName().equals(request.getMethod())) {
+            if (parentOfProxyMethod.isAnnotationPresent(RemoteProcedure.class) && method.getName().equals(request.getMethod())) {
 
                 Object methodReturnValue = null;
                 InvocationTargetException methodReturnException = null;
