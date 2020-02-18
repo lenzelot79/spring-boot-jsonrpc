@@ -9,6 +9,9 @@ In modern web-applications and microservice achitectures a RESTful API is one of
 * Annotation based headers
 * Works with spring-security and other method or controller based annotations
 
+## Compartibility
+Tested with `spring-boot-starter-parent:2.2.x`
+
 ## How to use it 
 
 ... TBD
