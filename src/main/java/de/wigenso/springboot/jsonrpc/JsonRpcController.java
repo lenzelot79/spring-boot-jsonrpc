@@ -4,12 +4,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-public class JsonRpcController extends JsonRpcHandler {
+public class JsonRpcController {
 
     @PostMapping
     @ResponseBody
     public JsonRpcResponse jsonRpcCall(@RequestBody JsonRpcRequest request) throws Throwable {
-        return super.jsonRpcCall(request);
+        return JsonRpcHandler.jsonRpcCall(request, this);
     }
 
 
