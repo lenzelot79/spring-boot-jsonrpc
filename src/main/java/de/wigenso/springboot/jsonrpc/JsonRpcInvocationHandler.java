@@ -27,7 +27,7 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
     }
 
     @Override
-    public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
+    public Object invoke(Object o, Method method, Object[] objects) throws JsonRpcClientException {
 
         final JsonRpcRequest rq = new JsonRpcRequest();
         rq.setId(RQ_ID);
@@ -63,7 +63,7 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
         final ResponseEntity<JsonRpcResponse> result = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, JsonRpcResponse.class);
 
         if (result.getBody() != null && result.getBody().getError() != null) {
-            throw objectMapper.convertValue(result.getBody().getError(), Exception.class); // TODO: specific ?? -> einen Interceptor einfügen / User-Defined parser
+            throw new JsonRpcClientException(result.getBody().getError()); // TODO: add exception converter
         } else if (result.getBody() != null && result.getBody().getResult() != null) {
             return objectMapper.convertValue(result.getBody().getResult(), method.getReturnType());
         } else {
