@@ -19,11 +19,13 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final String apiUrl;
+    private final JsonRpcClientErrorHandler errorHandler;
 
-    JsonRpcInvocationHandler(RestTemplate restTemplate, String baseUrl) {
+    JsonRpcInvocationHandler(RestTemplate restTemplate, String baseUrl, JsonRpcClientErrorHandler errorHandler) {
         this.restTemplate = restTemplate;
         this.apiUrl = baseUrl;
         this.objectMapper = new ObjectMapper();
+        this.errorHandler = errorHandler;
     }
 
     @Override
@@ -63,8 +65,10 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
         final ResponseEntity<JsonRpcResponse> result = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, JsonRpcResponse.class);
 
         if (result.getBody() != null && result.getBody().getError() != null) {
-            throw new JsonRpcClientException(result.getBody().getError()); // TODO: add exception converter
-        } else if (result.getBody() != null && result.getBody().getResult() != null) {
+            errorHandler.handleError(result.getBody().getError());
+        }
+
+        if (result.getBody() != null && result.getBody().getResult() != null) {
             return objectMapper.convertValue(result.getBody().getResult(), method.getReturnType());
         } else {
             return null;

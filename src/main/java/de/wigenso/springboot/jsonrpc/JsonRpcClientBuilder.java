@@ -8,7 +8,8 @@ public class JsonRpcClientBuilder<T> {
 
     private final Class<T> client;
     private String baseUrl = "";
-    private RestTemplate restTemplate;
+    private RestTemplate restTemplate = new RestTemplate();
+    private JsonRpcClientErrorHandler jsonRpcClientErrorHandler = new DefaultJsonRpcClientErrorHandler();
 
     private JsonRpcClientBuilder(Class<T> client)  {
         this.client = client;
@@ -28,15 +29,19 @@ public class JsonRpcClientBuilder<T> {
         return this;
     }
 
+    public JsonRpcClientBuilder<T> withErrorHandler(final JsonRpcClientErrorHandler jsonRpcClientErrorHandler) {
+        this.jsonRpcClientErrorHandler = jsonRpcClientErrorHandler;
+        return this;
+    }
+
     @SuppressWarnings("unchecked")
     public T build() {
-        restTemplate = restTemplate == null ? new RestTemplate() : restTemplate;
         final String apiUrl = baseUrl + (client.isAnnotationPresent(JsonRpcClient.class) ?
                 client.getDeclaredAnnotation(JsonRpcClient.class).value() : "");
         return (T) Proxy.newProxyInstance(
                 client.getClassLoader(),
                 new Class[] { client },
-                new JsonRpcInvocationHandler(restTemplate, apiUrl));
+                new JsonRpcInvocationHandler(restTemplate, apiUrl, jsonRpcClientErrorHandler));
     }
 
 }
