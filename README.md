@@ -21,17 +21,17 @@ Implemented for `spring-boot-starter-parent:2.x.x`
 
 ### Include via Maven
 ```xml
-    <dependency>
-        <groupId>de.wigenso.springboot</groupId>
-        <artifactId>lenzelot-jsonrpc</artifactId>
-        <version>1.0.0-RELEASE</version>
-    </dependency>
+<dependency>
+    <groupId>de.wigenso.springboot</groupId>
+    <artifactId>lenzelot-jsonrpc</artifactId>
+    <version>1.0.0-RELEASE</version>
+</dependency>
 ```
 
 ### Include via Gradle 
 
 ```groovy
-   compile group: 'de.wigenso.springboot', name: 'lenzelot-jsonrpc', version: '1.0-RELEASE'
+compile group: 'de.wigenso.springboot', name: 'lenzelot-jsonrpc', version: '1.0-RELEASE'
 ```
 
 ### Creating a JSON RPC Controller
@@ -82,20 +82,20 @@ One method in the previous example (4) throws an exception. If you wand to retur
 a mapping for any exception using `@ControllerAdvice` implementing `JsonExceptionConverter`
 
 ```java
-    @ControllerAdvice
-    public class DefaultJsonExceptionConverter implements JsonExceptionConverter {
+@ControllerAdvice
+public class DefaultJsonExceptionConverter implements JsonExceptionConverter {
 
-        @ExceptionHandler(RuntimeException.class)
-        public JsonNode convertRuntimeException(RuntimeException e) {
-            return messageToJsonNode(e); 
-        }
-
-        @ExceptionHandler(AccessDeniedException.class)
-        public JsonNode convertAccessDeniedException(AccessDeniedException e) {
-            return messageToJsonNode(e);
-        }
-
+    @ExceptionHandler(RuntimeException.class)
+    public JsonNode convertRuntimeException(RuntimeException e) {
+        return messageToJsonNode(e); 
     }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public JsonNode convertAccessDeniedException(AccessDeniedException e) {
+        return messageToJsonNode(e);
+    }
+
+}
 ``` 
 
 The `JsonExceptionConverter` contains simple method to convert exception to a JsonNode. Feel free to implement custom 
@@ -107,11 +107,11 @@ JSON-RPC for spring-boot is designed in a way that you are allowed to use any sp
 
 Example for authorization with spring security
 ```java
-    @RemoteProcedure
-    @PreAuthorize("hasRole('ADMIN')")
-    public String onlyForAdmin() {
-        return "Hello Admin!";
-    }
+@RemoteProcedure
+@PreAuthorize("hasRole('ADMIN')")
+public String onlyForAdmin() {
+    return "Hello Admin!";
+}
 ```
 
 Other interceptor annotations, eg. for transaction are also supported.
@@ -122,11 +122,11 @@ If you need to implement a controller containing JSON-RPC and other endpoint tog
 manually inside the controller.
 
 ```java
-    @PostMapping("/rpc")
-    @ResponseBody
-    public JsonRpcResponse rpcEndpoint(@RequestBody JsonRpcRequest request) throws Throwable {
-        return JsonRpcHandler.jsonRpcCall(request, this); // (1)
-    }
+@PostMapping("/rpc")
+@ResponseBody
+public JsonRpcResponse rpcEndpoint(@RequestBody JsonRpcRequest request) throws Throwable {
+    return JsonRpcHandler.jsonRpcCall(request, this); // (1)
+}
 ```
 The example defines a JSON-PRC endpoint on '/rpc'. The static in (1) will handle JSON-RPC calls. The second parameter 
 to the static call must be the class containing the target procedure(s) annotated with `@RemoteProcedure`
@@ -139,10 +139,10 @@ Parameters of the following types will be injected by the framework (as in sprin
 
 In the following example the `Principal` will be injected by the framework, this parameter need not to be added to the `JsonRpcRequest`: 
 ```java
-    @RemoteProcedure
-    public String helloPrincipal(String say, String mark, Principal principal) {
-        return say + " " + principal.getName() + mark;
-    }
+@RemoteProcedure
+public String helloPrincipal(String say, String mark, Principal principal) {
+    return say + " " + principal.getName() + mark;
+}
 ```
 
 ### JSON-RPC Java Client   
@@ -172,7 +172,7 @@ public interface MyJsonRpcControllerClient {
 If you need to inject parameters via a http-header and not as JSON-RPC parameter, it can be annotated with `@RequestHeader` from spring web:
 
 ```java
-    String helloHeader(@RequestHeader("x-test") final String value);
+String helloHeader(@RequestHeader("x-test") final String value);
 ```
 
 In this example the parameter *value* will not be added to JSON-RPC parameters, it will be send as http-header with key "x-test".
@@ -182,14 +182,14 @@ In this example the parameter *value* will not be added to JSON-RPC parameters, 
 To get an instance of the client a bean as follows must be registered. For test the instance can be created directly in the test class. 
 
 ```java
-    MyJsonRpcControllerClient client() {
-        return JsonRpcClientBuilder.of(MyJsonRpcControllerClient.class) // (1)
-                .withRestTemplate(restTemplate) // (2)
-                .withBaseUrl("http://localhost:" + port) // (3)
-                .withErrorHandler(new MyJsonRpcClientErrorHandler()) // (4)
-                .withInterceptor(retryInterceptor) // (5)
-                .build();
-    }
+MyJsonRpcControllerClient client() {
+    return JsonRpcClientBuilder.of(MyJsonRpcControllerClient.class) // (1)
+            .withRestTemplate(restTemplate) // (2)
+            .withBaseUrl("http://localhost:" + port) // (3)
+            .withErrorHandler(new MyJsonRpcClientErrorHandler()) // (4)
+            .withInterceptor(retryInterceptor) // (5)
+            .build();
+}
 ```
 
 * (1) In this example an instance of `MyJsonRpcControllerClient` is generated by te the framework. 
@@ -209,12 +209,12 @@ If you need a custom error handler you implement an own error handler and regist
 Example for a custom error handler: 
 
 ```java
-    public class MyJsonRpcClientErrorHandler implements JsonRpcClientErrorHandler {
-        @Override
-        public void handleError(JsonNode errorNode) {
-            throw new MyJsonRpcClientException(errorNode);
-        }
+public class MyJsonRpcClientErrorHandler implements JsonRpcClientErrorHandler {
+    @Override
+    public void handleError(JsonNode errorNode) {
+        throw new MyJsonRpcClientException(errorNode);
     }
+}
 ```  
 
 **Retry policy**
@@ -227,14 +227,14 @@ Following steps are required for that:
 (1) Include spring retry and aop: 
 
 ```xml 
-    <dependency>
-        <groupId>org.springframework.retry</groupId>
-        <artifactId>spring-retry</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-aop</artifactId>
-    </dependency>
+<dependency>
+    <groupId>org.springframework.retry</groupId>
+    <artifactId>spring-retry</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-aop</artifactId>
+</dependency>
 ```
 
 (2) Annotate a spring configuration with `@EnableRetry`
@@ -242,14 +242,14 @@ Following steps are required for that:
 (3) Implement your own retry interceptor like this: 
 
 ```java
-    @Service
-    public class JsonRpcClientRetryInterceptor implements JsonRpcClientInterceptor {
-    
-        @Retryable(value = ExceptionYouWantARetryFor.class, maxAttempts = 4)
-        public ResponseEntity<JsonRpcResponse> execute(final HttpEntity<JsonRpcRequest> entity, final JsonRpcClientTarget target) {
-            return target.execute(entity);
-        }
+@Service
+public class JsonRpcClientRetryInterceptor implements JsonRpcClientInterceptor {
+
+    @Retryable(value = ExceptionYouWantARetryFor.class, maxAttempts = 4)
+    public ResponseEntity<JsonRpcResponse> execute(final HttpEntity<JsonRpcRequest> entity, final JsonRpcClientTarget target) {
+        return target.execute(entity);
     }
+}
 ```  
 
  (4) Register it in `MyJsonRpcControllerClient client()` using `withInterceptor(retryInterceptor)` (example above)
