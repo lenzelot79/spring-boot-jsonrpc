@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
 
-public class JsonRpcInvocationHandler implements InvocationHandler {
+public class JsonRpcInvocationHandler implements InvocationHandler, JsonRpcClientTarget {
 
     private final static int RQ_ID = 1;
     private final static String JSON_RPC_VERSION = "2.0";
@@ -20,12 +20,14 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
     private final ObjectMapper objectMapper;
     private final String apiUrl;
     private final JsonRpcClientErrorHandler errorHandler;
+    private final JsonRpcClientInterceptor interceptor;
 
-    JsonRpcInvocationHandler(RestTemplate restTemplate, String baseUrl, JsonRpcClientErrorHandler errorHandler) {
+    JsonRpcInvocationHandler(RestTemplate restTemplate, String baseUrl, JsonRpcClientErrorHandler errorHandler, JsonRpcClientInterceptor interceptor) {
         this.restTemplate = restTemplate;
         this.apiUrl = baseUrl;
         this.objectMapper = new ObjectMapper();
         this.errorHandler = errorHandler;
+        this.interceptor = interceptor;
     }
 
     @Override
@@ -62,17 +64,23 @@ public class JsonRpcInvocationHandler implements InvocationHandler {
         }
 
         final HttpEntity<JsonRpcRequest> entity = new HttpEntity<>(rq,  httpHeaders);
-        final ResponseEntity<JsonRpcResponse> result = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, JsonRpcResponse.class);
-
-        if (result.getBody() != null && result.getBody().getError() != null) {
-            errorHandler.handleError(result.getBody().getError());
-        }
+        final ResponseEntity<JsonRpcResponse> result = interceptor == null ? execute(entity) : interceptor.execute(entity, this);
 
         if (result.getBody() != null && result.getBody().getResult() != null) {
             return objectMapper.convertValue(result.getBody().getResult(), method.getReturnType());
         } else {
             return null;
         }
+    }
+
+    public ResponseEntity<JsonRpcResponse> execute(final HttpEntity<JsonRpcRequest> entity) {
+        final ResponseEntity<JsonRpcResponse> result = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, JsonRpcResponse.class);
+
+        if (result.getBody() != null && result.getBody().getError() != null) {
+            errorHandler.handleError(result.getBody().getError());
+        }
+
+        return result;
     }
 
 }
