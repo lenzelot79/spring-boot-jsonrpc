@@ -246,7 +246,8 @@ Following steps are required for that:
 public class JsonRpcClientRetryInterceptor implements JsonRpcClientInterceptor {
 
     @Retryable(value = ExceptionYouWantARetryFor.class, maxAttempts = 4)
-    public ResponseEntity<JsonRpcResponse> execute(final HttpEntity<JsonRpcRequest> entity, final JsonRpcClientTarget target) {
+    public ResponseEntity<JsonRpcResponse> execute(final HttpEntity<JsonRpcRequest> entity, 
+            final JsonRpcClientTarget target) {
         return target.execute(entity);
     }
 }
