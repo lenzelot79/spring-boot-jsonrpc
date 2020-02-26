@@ -259,3 +259,7 @@ public class JsonRpcClientRetryInterceptor implements JsonRpcClientInterceptor {
 ## Test project 
 
 For advanced testing there is a test project on GitHub, containing all the examples above: [spring-boot-jsonrpc-test](https://github.com/lenzelot79/spring-boot-jsonrpc-test)
+
+<hr>
+
+*Implemented and published by Ludwig Lenz 2020, www.wigenso.de* 
