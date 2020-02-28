@@ -31,7 +31,7 @@ Implemented for `spring-boot-starter-parent:2.x.x`
 ### Include via Gradle 
 
 ```groovy
-compile group: 'de.wigenso.springboot', name: 'lenzelot-jsonrpc', version: '1.0-RELEASE'
+compile group: 'de.wigenso.springboot', name: 'lenzelot-jsonrpc', version: '1.0.0-RELEASE'
 ```
 
 ### Creating a JSON RPC Controller
